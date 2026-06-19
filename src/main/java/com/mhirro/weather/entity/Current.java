@@ -1,4 +1,4 @@
-package com.mhirro.weather.dto;
+package com.mhirro.weather.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
@@ -8,9 +8,9 @@ import lombok.Data;
 @Data
 @Builder
 @AllArgsConstructor
-public class WeatherDto {
+public class Current {
+    @JsonProperty("temperature")
+    private String temperature;
     @JsonProperty("wind_speed")
     private String windSpeed;
-    @JsonProperty("temperature_degrees")
-    private String tempDegrees;
 }
