@@ -6,7 +6,6 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -16,20 +15,19 @@ import org.springframework.web.client.RestClient;
 public class WeatherServiceImpl implements WeatherService{
 
     @Autowired
-    @Qualifier("primaryClient")
-    private RestClient primaryClient;
-
-    @Autowired
-    @Qualifier("secondaryClient")
-    private RestClient secondaryClient;
+    private RestClient.Builder builder;
 
     @Override
-    @Cacheable
-    @CircuitBreaker(name = "primary", fallbackMethod = "getWeatherFromSecondary")
-    @Retry(name = "primary")
+    @Cacheable("primary")
+    @CircuitBreaker(name = "primary")
+    @Retry(name = "primary", fallbackMethod = "getWeatherFromSecondary")
     public WeatherDto getWeather(String city) {
         log.info("Calling primary weather API for city {}", city);
-        Weather response = primaryClient.get()
+
+        RestClient client = builder.build();
+
+        Weather response = client.get()
+                .uri("http://localhost:8081/weather/1")
                 .retrieve()
                 .body(Weather.class);
 
@@ -39,11 +37,16 @@ public class WeatherServiceImpl implements WeatherService{
                 .build();
     }
 
+    @CircuitBreaker(name = "secondary")
     @Retry(name = "secondary")
-    @Cacheable
+    @Cacheable("secondary")
     public WeatherDto getWeatherFromSecondary(String city, RuntimeException e) {
         log.info("Calling secondary weather API for city {}", city);
-        Weather response = secondaryClient.get()
+
+        RestClient client = builder.build();
+
+        Weather response = client.get()
+                .uri("http://localhost:8081/weather/2")
                 .retrieve()
                 .body(Weather.class);
 

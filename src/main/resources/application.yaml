@@ -22,7 +22,8 @@ resilience4j.circuitbreaker:
   instances:
     primary:
       baseConfig: default
-      waitDurationInOpenState: 5000
+    secondary:
+      baseConfig: default
 
 resilience4j.retry:
   instances:
@@ -31,16 +32,18 @@ resilience4j.retry:
       waitDuration: 500ms
       enableExponentialBackoff: true
       exponentialBackoffMultiplier: 2
-#      retryExceptions:
-#        - org.springframework.web.client.HttpServerErrorException
-#        - java.io.IOException
+      retryExceptions:
+        - org.springframework.web.client.HttpServerErrorException
+        - org.springframework.web.client.HttpClientErrorException
+        - java.io.IOException
 #      ignoreExceptions:
     secondary:
       maxAttempts: 3
       waitDuration: 500ms
       enableExponentialBackoff: true
       exponentialBackoffMultiplier: 2
-#      retryExceptions:
-#        - org.springframework.web.client.HttpServerErrorException
-#        - java.io.IOException
+      retryExceptions:
+        - org.springframework.web.client.HttpServerErrorException
+        - org.springframework.web.client.HttpClientErrorException
+        - java.io.IOException
 #      ignoreExceptions:
