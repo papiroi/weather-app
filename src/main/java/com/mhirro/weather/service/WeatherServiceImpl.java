@@ -3,8 +3,6 @@ package com.mhirro.weather.service;
 import com.mhirro.weather.dto.WeatherDto;
 import com.mhirro.weather.entity.Weather;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -12,7 +10,7 @@ import org.springframework.web.client.RestClient;
 public class WeatherServiceImpl implements WeatherService{
 
     //@Value("${weather.primary.url}")
-    private static final String PRIMARY_URL = "http://api.openweathermap.org/data/2.5/weather?q=melbourne,AU&appid=2326504fb9b100bee21400190e4dbe6d&units=metric";
+    private static final String PRIMARY_URL = "http://localhost:8081/weather";
 //    public WeatherServiceImpl(@Value("${weather.primary.url") String primaryUrl) {
 //        PRIMARY_URL = primaryUrl;
 //    }
@@ -30,8 +28,8 @@ public class WeatherServiceImpl implements WeatherService{
                 .body(Weather.class);
 
         return WeatherDto.builder()
-                .tempDegrees(response.getMain().getTemperature())
-                .windSpeed(response.getWind().getSpeed())
+                .tempDegrees(response.getCurrent().getTemperature())
+                .windSpeed(response.getCurrent().getWindSpeed())
                 .build();
     }
 }
