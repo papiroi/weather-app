@@ -6,7 +6,9 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -18,7 +20,7 @@ public class WeatherServiceImpl implements WeatherService{
     private RestClient.Builder builder;
 
     @Override
-    @Cacheable("primary")
+    @Caching(cacheable = {@Cacheable("primary")}, put = {@CachePut("backup")})
     @CircuitBreaker(name = "primary")
     @Retry(name = "primary", fallbackMethod = "getWeatherFromSecondary")
     public WeatherDto getWeather(String city) {
@@ -37,10 +39,12 @@ public class WeatherServiceImpl implements WeatherService{
                 .build();
     }
 
+    @Override
     @CircuitBreaker(name = "secondary")
-    @Retry(name = "secondary")
-    @Cacheable("secondary")
+    @Retry(name = "secondary",  fallbackMethod = "getWeatherFromCache")
+    @Caching(cacheable = {@Cacheable("secondary")}, put = {@CachePut("backup")})
     public WeatherDto getWeatherFromSecondary(String city, RuntimeException e) {
+        log.debug("Encountered exception at primary API: {}", e.getClass());
         log.info("Calling secondary weather API for city {}", city);
 
         RestClient client = builder.build();
@@ -55,4 +59,12 @@ public class WeatherServiceImpl implements WeatherService{
                 .windSpeed(response.getWind().getSpeed())
                 .build();
     }
+
+//    @Cacheable("backup")
+//    public WeatherDto getWeatherFromCache(String city, RuntimeException re, Throwable e) {
+//        log.debug("Encountered exception at secondary API: {}", re.getClass());
+//        log.info("Fetching from cache for city {}", city);
+//
+//        throw re;
+//    }
 }

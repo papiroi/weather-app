@@ -23,13 +23,14 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
+
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withResourceNotFound;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
 
 @ExtendWith(MockitoExtension.class)
 @RestClientTest(WeatherService.class)
@@ -84,13 +85,10 @@ public class WeatherServiceTest {
 
         String weatherString = mapper.writeValueAsString(weather2);
 
-        this.server.expect(requestTo("http://localhost:8081/weather/1"))
-                .andRespond(withResourceNotFound());
-
         this.server.expect(requestTo("http://localhost:8081/weather/2"))
                 .andRespond(withSuccess(weatherString, MediaType.APPLICATION_JSON));
 
-        WeatherDto weather = service.getWeather("Manila");
+        WeatherDto weather = service.getWeatherFromSecondary("Manila", new RuntimeException());
         assertNotNull(weather);
     }
 

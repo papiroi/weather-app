@@ -8,7 +8,7 @@ weather:
   fallback:
     url: ${WEATHER_FALLBACK_URL}
   default:
-    city: Melbourne
+    city: Melbourne${WEATHER_FALLBACK_URL}Bris
 
 resilience4j.circuitbreaker:
   configs:

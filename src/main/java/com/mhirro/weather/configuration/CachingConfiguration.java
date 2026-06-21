@@ -24,15 +24,22 @@ public class CachingConfiguration {
         SimpleCacheManager cacheManager = new SimpleCacheManager();
         cacheManager.setCaches(Arrays.asList(
                 new ConcurrentMapCache("primary"),
-                new ConcurrentMapCache("secondary")
+                new ConcurrentMapCache("secondary"),
+                new ConcurrentMapCache("backup")
         ));
 
         return cacheManager;
     }
 
-    @CacheEvict(allEntries = true, value = {"primary"})
+    @CacheEvict(allEntries = true, value = {"primary", "secondary"})
     @Scheduled(fixedDelayString = "3s", initialDelayString = "3s")
     public void clearCache() {
         log.info("Cache cleared");
+    }
+
+    @CacheEvict(allEntries = true, value = {"backup"})
+    @Scheduled(fixedDelayString = "60m", initialDelayString = "60m")
+    public void clearBackupCache() {
+        log.info("Backup Cache cleared");
     }
 }
