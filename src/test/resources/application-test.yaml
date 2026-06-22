@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: weather
+
+weather:
+  primary:
+    url: https://test1
+    apikey: test
+  fallback:
+    url: https://test2
+    apikey: test2
+  default:
+    city: Melbourne
+
+resilience4j.circuitbreaker:
+  configs:
+    default:
+      slidingWindowSize: 10
+      permittedNumberOfCallsInHalfOpenState: 10
+      waitDurationInOpenState: 10000
+      failureRateThreshold: 60
+      eventConsumerBufferSize: 10
+      registerHealthIndicator: true
+  instances:
+    primary:
+      baseConfig: default
+    secondary:
+      baseConfig: default
+
+resilience4j.retry:
+  instances:
+    primary:
+      maxAttempts: 3
+      waitDuration: 500ms
+      enableExponentialBackoff: true
+      exponentialBackoffMultiplier: 2
+      retryExceptions:
+        - org.springframework.web.client.HttpServerErrorException
+        - org.springframework.web.client.HttpClientErrorException
+        - java.io.IOException
+#      ignoreExceptions:
+    secondary:
+      maxAttempts: 3
+      waitDuration: 500ms
+      enableExponentialBackoff: true
+      exponentialBackoffMultiplier: 2
+      retryExceptions:
+        - org.springframework.web.client.HttpServerErrorException
+        - org.springframework.web.client.HttpClientErrorException
+        - java.io.IOException
+#      ignoreExceptions:

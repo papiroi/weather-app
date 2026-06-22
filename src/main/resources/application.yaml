@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: weather
+
+weather:
+  primary:
+    url: https://api.weatherstack.com/current
+    apikey: ${WEATHER_PRIMARY_API_KEY}
+  fallback:
+    url: https://api.openweathermap.org/data/2.5/weather
+    apikey: ${WEATHER_FALLBACK_API_KEY}
+  default:
+    city: Melbourne
+
+resilience4j.circuitbreaker:
+  configs:
+    default:
+      slidingWindowSize: 10
+      permittedNumberOfCallsInHalfOpenState: 10
+      waitDurationInOpenState: 10000
+      failureRateThreshold: 60
+      eventConsumerBufferSize: 10
+      registerHealthIndicator: true
+  instances:
+    primary:
+      baseConfig: default
+    secondary:
+      baseConfig: default
+
+resilience4j.retry:
+  instances:
+    primary:
+      maxAttempts: 3
+      waitDuration: 500ms
+      enableExponentialBackoff: true
+      exponentialBackoffMultiplier: 2
+      retryExceptions:
+        - org.springframework.web.client.HttpServerErrorException
+        - org.springframework.web.client.HttpClientErrorException
+        - java.io.IOException
+#      ignoreExceptions:
+    secondary:
+      maxAttempts: 3
+      waitDuration: 500ms
+      enableExponentialBackoff: true
+      exponentialBackoffMultiplier: 2
+      retryExceptions:
+        - org.springframework.web.client.HttpServerErrorException
+        - org.springframework.web.client.HttpClientErrorException
+        - java.io.IOException
+#      ignoreExceptions:
