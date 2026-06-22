@@ -6,6 +6,8 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -19,52 +21,72 @@ public class WeatherServiceImpl implements WeatherService{
     @Autowired
     private RestClient.Builder builder;
 
+    @Value("${weather.primary.apikey}")
+    private String primaryApiKey;
+
+    @Value("${weather.primary.url}")
+    private String primaryUrl;
+
+    @Value("${weather.fallback.apikey}")
+    private String secondaryApiKey;
+
+    @Value("${weather.fallback.url}")
+    private String secondaryUrl;
+
     @Override
-    @Caching(cacheable = {@Cacheable("primary")}, put = {@CachePut("backup")})
-    @CircuitBreaker(name = "primary")
+    @Cacheable(cacheNames = {"primary"})
     @Retry(name = "primary", fallbackMethod = "getWeatherFromSecondary")
     public WeatherDto getWeather(String city) {
         log.info("Calling primary weather API for city {}", city);
 
-        RestClient client = builder.build();
+        RestClient client = builder
+                .baseUrl(primaryUrl)
+                .build();
 
         Weather response = client.get()
-                .uri("http://localhost:8081/weather/1")
+                .uri(uriBuilder -> uriBuilder
+                        .queryParam("access_key", primaryApiKey)
+                        .queryParam("query", city)
+                        .build())
                 .retrieve()
                 .body(Weather.class);
 
-        return WeatherDto.builder()
-                .tempDegrees(response.getCurrent().getTemperature())
-                .windSpeed(response.getCurrent().getWindSpeed())
-                .build();
+        if (response != null) {
+            return WeatherDto.builder()
+                    .tempDegrees(response.getCurrent().getTemperature())
+                    .windSpeed(response.getCurrent().getWindSpeed())
+                    .build();
+        } else {
+            return null;
+        }
     }
 
     @Override
-    @CircuitBreaker(name = "secondary")
-    @Retry(name = "secondary",  fallbackMethod = "getWeatherFromCache")
-    @Caching(cacheable = {@Cacheable("secondary")}, put = {@CachePut("backup")})
+    @Retry(name = "secondary")
+    @Cacheable(cacheNames = {"secondary"})
     public WeatherDto getWeatherFromSecondary(String city, RuntimeException e) {
         log.debug("Encountered exception at primary API: {}", e.getClass());
         log.info("Calling secondary weather API for city {}", city);
 
-        RestClient client = builder.build();
+        RestClient client = builder
+                .baseUrl(secondaryUrl)
+                .build();
 
         Weather response = client.get()
-                .uri("http://localhost:8081/weather/2")
+                .uri(uriBuilder -> uriBuilder
+                        .queryParam("q", city)
+                        .queryParam("appid", secondaryApiKey)
+                        .build())
                 .retrieve()
                 .body(Weather.class);
 
-        return WeatherDto.builder()
-                .tempDegrees(response.getMain().getTemperature())
-                .windSpeed(response.getWind().getSpeed())
-                .build();
+        if (response != null) {
+            return WeatherDto.builder()
+                    .tempDegrees(response.getMain().getTemperature())
+                    .windSpeed(response.getWind().getSpeed())
+                    .build();
+        } else {
+            return null;
+        }
     }
-
-//    @Cacheable("backup")
-//    public WeatherDto getWeatherFromCache(String city, RuntimeException re, Throwable e) {
-//        log.debug("Encountered exception at secondary API: {}", re.getClass());
-//        log.info("Fetching from cache for city {}", city);
-//
-//        throw re;
-//    }
 }

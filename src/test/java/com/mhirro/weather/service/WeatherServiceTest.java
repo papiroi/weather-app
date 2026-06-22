@@ -1,44 +1,47 @@
 package com.mhirro.weather.service;
 
-import com.mhirro.weather.configuration.ConnectionConfiguration;
 import com.mhirro.weather.dto.WeatherDto;
 import com.mhirro.weather.entity.Current;
 import com.mhirro.weather.entity.Main;
 import com.mhirro.weather.entity.Weather;
 import com.mhirro.weather.entity.Wind;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.client.MockRestServiceServer;
-import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriBuilder;
+import org.springframework.web.util.UriComponentsBuilder;
 import tools.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
+import java.net.URI;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
 
 @ExtendWith(MockitoExtension.class)
 @RestClientTest(WeatherService.class)
+@ActiveProfiles("test")
 public class WeatherServiceTest {
 
     @InjectMocks
     @Autowired
     private WeatherService service;
+
+    @Value("${weather.primary.url}")
+    private String primaryUrl;
+
+    @Value("${weather.fallback.url}")
+    private String secondaryUrl;
 
     @Autowired
     private MockRestServiceServer server;
@@ -73,7 +76,13 @@ public class WeatherServiceTest {
 
         String weatherString = mapper.writeValueAsString(weather1);
 
-        this.server.expect(requestTo("http://localhost:8081/weather/1"))
+        URI uri = UriComponentsBuilder.fromUriString(primaryUrl)
+                .queryParam("access_key", "test")
+                .queryParam("query", "Manila")
+                .build()
+                .toUri();
+
+        this.server.expect(requestTo(uri))
                 .andRespond(withSuccess(weatherString, MediaType.APPLICATION_JSON));
 
         WeatherDto weather = service.getWeather("Manila");
@@ -82,10 +91,15 @@ public class WeatherServiceTest {
 
     @Test
     public void testWeatherServicePrimaryApiFails() {
-
         String weatherString = mapper.writeValueAsString(weather2);
 
-        this.server.expect(requestTo("http://localhost:8081/weather/2"))
+        URI uri = UriComponentsBuilder.fromUriString(secondaryUrl)
+                .queryParam("q", "Manila")
+                .queryParam("appid", "test2")
+                .build()
+                .toUri();
+
+        this.server.expect(requestTo(uri))
                 .andRespond(withSuccess(weatherString, MediaType.APPLICATION_JSON));
 
         WeatherDto weather = service.getWeatherFromSecondary("Manila", new RuntimeException());

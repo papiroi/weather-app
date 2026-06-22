@@ -4,11 +4,11 @@ spring:
 
 weather:
   primary:
-    url: https://api.weatherstack.com/current
-    apikey: ${WEATHER_PRIMARY_API_KEY}
+    url: https://test1
+    apikey: test
   fallback:
-    url: https://api.openweathermap.org/data/2.5/weather
-    apikey: ${WEATHER_FALLBACK_API_KEY}
+    url: https://test2
+    apikey: test2
   default:
     city: Melbourne
 
